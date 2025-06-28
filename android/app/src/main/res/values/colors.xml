@@ -1,0 +1,4 @@
+<resources>
+    <!-- Add this line if not already present -->
+    <color name="splash_bg_color">#DDFD5F</color>
+</resources>
