@@ -58,33 +58,33 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         isLoading = true;
       });
-        final response = await authProvider.login(
-            username: emailController.text.trim(), password: passwordController.text.trim());
+      final response = await authProvider.login(
+          username: emailController.text.trim(),
+          password: passwordController.text.trim());
 
-        setState(() {
-          isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
+      if (response['success']) {
+        final sessionManager =
+            Provider.of<SessionManager>(context, listen: false);
+
+        Provider.of<SessionManager>(context, listen: false).updateTokens(
+            accessToken: response['access_token'],
+            refreshToken: response['refresh_token']);
+        Future.microtask(() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => indexPage(
+                token: response['access_token'],
+              ),
+            ),
+          );
         });
-        if (response['success']) {
-          final sessionManager =
-              Provider.of<SessionManager>(context, listen: false);
-
-          Provider.of<SessionManager>(context, listen: false).updateTokens(
-              accessToken: response['access_token'],
-              refreshToken: response['refresh_token']);
-          Future.microtask(() {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => indexPage(
-        token: response['access_token'],
-      ),
-    ),
-  );
-});
-
-        } else {
-          CustomSnackbar.showError(context, response['data']);
-        }
+      } else {
+        CustomSnackbar.showError(context, response['data']);
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

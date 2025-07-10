@@ -42,4 +42,10 @@ class AppImages {
   static String header_bg = "$imagePath/header_bg.png";
   static String error_state = "$imagePath/error_state.png";
   static String empty_state = "$imagePath/empty_state.png";
+  static String redeemed = "$imagePath/redeemed.png";
+  static String acct_balance = "$imagePath/acct_balance.png";
+  static String my_vouchers = "$imagePath/my_vouchers.png";
+  static String loyalty_points = "$imagePath/loyalty_points.png";
+  static String store_credit = "$imagePath/store_credit.png";
+  static String big_star = "$imagePath/big_star.png";
 }

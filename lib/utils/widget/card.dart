@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:moniback/modules/home_tabs/pages/bulk_deal.dart';
 import 'package:moniback/providers/auth_providers.dart';
 import 'package:moniback/providers/voucher_provider.dart';
 import 'package:moniback/utils/constants/app_colors.dart';
@@ -76,7 +77,9 @@ class _DealCardState extends State<DealCard> {
     _startCountdown();
     //_loadImage();
     setState(() {
-      (widget.deal["AvailableVouchers"] < 1) ? isClaimed = true : isClaimed = false;
+      (widget.deal["AvailableVouchers"] < 1)
+          ? isClaimed = true
+          : isClaimed = false;
       isBookmarked = ValueNotifier(widget.deal["IsMarkedLiked"]);
       isBookmarking = ValueNotifier(false);
       isLiked = ValueNotifier(widget.deal["IsLiked"]);
@@ -106,7 +109,8 @@ class _DealCardState extends State<DealCard> {
       setState(() {
         isLoading = true;
         widget.deal["IsMarkedLiked"] = !widget.deal["IsMarkedLiked"];
-        widget.deal["MarkedLikedCount"] += (widget.deal["IsMarkedLiked"])? 1:-1;
+        widget.deal["MarkedLikedCount"] +=
+            (widget.deal["IsMarkedLiked"]) ? 1 : -1;
       });
       final results = await voucherProvider.likeVoucher(
           token: widget.token,
@@ -122,7 +126,8 @@ class _DealCardState extends State<DealCard> {
         isLoading = false;
         if (!results["success"]) {
           widget.deal["IsMarkedLiked"] = !widget.deal["IsMarkedLiked"];
-          widget.deal["MarkedLikedCount"] -=  (widget.deal["IsMarkedLiked"])? -1:1;
+          widget.deal["MarkedLikedCount"] -=
+              (widget.deal["IsMarkedLiked"]) ? -1 : 1;
         }
       });
     } catch (error) {
@@ -136,7 +141,7 @@ class _DealCardState extends State<DealCard> {
       setState(() {
         isLoading = true;
         widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
-        widget.deal["BookmarkCount"] += (widget.deal["IsBookmarked"])? 1:-1;
+        widget.deal["BookmarkCount"] += (widget.deal["IsBookmarked"]) ? 1 : -1;
       });
       print(widget.deal["BookmarkCount"]);
       final results = await voucherProvider.bookMarkVoucher(
@@ -149,8 +154,8 @@ class _DealCardState extends State<DealCard> {
         isLoading = false;
       });
       if (!results["success"]) {
-          widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
-          widget.deal["BookmarkCount"] -=  (widget.deal["BookmarkCount"])? -1:1;
+        widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
+        widget.deal["BookmarkCount"] -= (widget.deal["BookmarkCount"]) ? -1 : 1;
       }
     } catch (error) {
       // Handle errors here
@@ -172,8 +177,7 @@ class _DealCardState extends State<DealCard> {
         isLoading = false;
         print(results["success"]);
         if (results["success"]) {
-          CustomSnackbar.showSuccess(context,results["message"]);
-
+          CustomSnackbar.showSuccess(context, results["message"]);
         } else {
           CustomSnackbar.showError(context, results['data']);
         }
@@ -244,13 +248,31 @@ class _DealCardState extends State<DealCard> {
                       },
                     ),
                     SizedBox(width: 8),
-                    Text(
-                      widget.deal["BusinessName"],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: AppColor.dark),
-                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.deal["BusinessName"],
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                              color: AppColor.dark),
+                        ),
+                        Visibility(
+                          visible: widget.deal["IsBulkDeal"],
+                          child: const Text(
+                            "Bulk deals",textAlign: TextAlign.left,
+                            style: TextStyle(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 10,
+                                color: AppColor.lightdark),
+                          ),
+                        )
+                        //
+                      ],
+                    )
                   ],
                 ),
                 ClipRRect(
@@ -298,15 +320,15 @@ class _DealCardState extends State<DealCard> {
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         //
-                        return  Container(
-                      color: AppColor.background,
-                      height: size.height * 0.4,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColor.primaryColor,
-                        ),
-                      ),
-                    );
+                        return Container(
+                          color: AppColor.background,
+                          height: size.height * 0.4,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
+                        );
                       } else if (snapshot.hasError) {
                         return CircleAvatar(
                           backgroundColor: Colors.red[300],
@@ -323,16 +345,6 @@ class _DealCardState extends State<DealCard> {
                       }
                     },
                   ),
-                  // if (isLoading)
-                  //   Container(
-                  //     color: AppColor.background,
-                  //     height: size.height * 0.4,
-                  //     child: const Center(
-                  //       child: CircularProgressIndicator(
-                  //         color: AppColor.primaryColor,
-                  //       ),
-                  //     ),
-                  //   ),
                 ],
               ),
             ),
@@ -460,72 +472,91 @@ class _DealCardState extends State<DealCard> {
                                 EdgeInsets.fromLTRB(size.width * 0.08, 0, 0, 0),
                             width: size.width * 0.4,
                             child: ElevatedButton(
-                              onPressed: () => isClaimed||(countDown == "Expired")
-                                  ? {
-                                      CustomSnackbar.showError(context,
-                                          "You you cannot claim this voucher")
-                                    }
-                                    :_claimAction(voucherProvider),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isClaimed|(countDown == "Expired")
-                                    ? AppColor.cardBtn
-                                    : AppColor.primaryColor,
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                onPressed: () =>(widget.deal["IsBulkDeal"])
+                                    ?
+                                {Navigator.push(
+              context, MaterialPageRoute(builder: (context) => BulkDeal(token: widget.token,contactKey: widget.deal["BusinessKey"],)))
+       } 
+                                    :isClaimed || (countDown == "Expired")
+                                        ? {
+                                            CustomSnackbar.showError(context,
+                                                "You you cannot claim this voucher")
+                                          }
+                                        : _claimAction(voucherProvider),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      isClaimed | (countDown == "Expired")
+                                          ? AppColor.cardBtn
+                                          : AppColor.primaryColor,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                (widget.deal["AvailableVouchers"] < 1) ? "Claimed" :(countDown == "Expired")? "Expired": "Claim Now",
-                                style: TextStyle(
-                                    color: isClaimed
-                                        ? AppColor.grey2
-                                        :(countDown == "Expired")? AppColor.Red: Colors.black,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14),
-                              ),
-                            ),
+                                child: (widget.deal["IsBulkDeal"])
+                                    ? const Text(
+                                        "View deal",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 14),
+                                      )
+                                    : Text(
+                                        (widget.deal["AvailableVouchers"] < 1)
+                                            ? "Claimed"
+                                            : (countDown == "Expired")
+                                                ? "Expired"
+                                                : "Claim Now",
+                                        style: TextStyle(
+                                            color: isClaimed
+                                                ? AppColor.grey2
+                                                : (countDown == "Expired")
+                                                    ? AppColor.Red
+                                                    : Colors.black,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 14))),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 10),
-                     ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    width: size.width * 0.3,
-                    height: size.height * 0.04,
-                    color: (widget.deal["AvailableVouchers"] <= 10)
-                        ? AppColor.lightRed
-                        : AppColor.dateBGGreen,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(width: 6),
-                        Visibility(
-                            visible: (widget.deal["AvailableVouchers"] >= 10),
-                            child:  Icon(Icons.info_outline,
-                                 color: widget.deal["AvailableVouchers"] <= 10
-                                  ? AppColor.Red
-                                  : AppColor.dateGreen),),
-                        SizedBox(width: 6),
-                        Text(
-                          "${widget.deal["AvailableVouchersHtml"]}",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: widget.deal["AvailableVouchers"] <= 10
-                                  ? AppColor.Red
-                                  : AppColor.dateGreen),
-                        )
-                      ],
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        alignment: Alignment.centerLeft,
+                        width: size.width * 0.3,
+                        height: size.height * 0.04,
+                        color: (widget.deal["AvailableVouchers"] <= 10)
+                            ? AppColor.lightRed
+                            : AppColor.dateBGGreen,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(width: 6),
+                            Visibility(
+                              visible: (widget.deal["AvailableVouchers"] >= 10),
+                              child: Icon(Icons.info_outline,
+                                  color: widget.deal["AvailableVouchers"] <= 10
+                                      ? AppColor.Red
+                                      : AppColor.dateGreen),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              "${widget.deal["AvailableVouchersHtml"]}",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: widget.deal["AvailableVouchers"] <= 10
+                                      ? AppColor.Red
+                                      : AppColor.dateGreen),
+                            )
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                    
+
                     Text.rich(
                       TextSpan(
                         children: [

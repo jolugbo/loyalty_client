@@ -15,32 +15,85 @@ class StoreProvider with ChangeNotifier {
       required this.countdownManager,
       required this.sessionManager});
 
-  Future<Map<String, dynamic>> getStore({
-    required String? token,
-    required String key,
-  }) async {
+  Future<Map<String, dynamic>> getStores(
+      {required String? token, required String key, int page = 1}) async {
     if (CountdownManager().remainingSeconds == 0) {
       await authProvider.refreshToken();
       countdownManager.restart();
       token = sessionManager.authToken;
     }
-    final String endpoint =
-        "${AppConfigs.baseUrl}/api/micro/moniback/mystoreinfo?key=$key";
+    final Map<String, dynamic> body = {
+      "keyword": key,
+      "pageNumber": page,
+      "pageSize": 10
+    };
+    final String endpoint = "${AppConfigs.baseUrl}/api/micro/moniback/mystores";
 
-    final response = await http.get(
+    final Map<String, String> _headers = {
+      "Content-Type": "application/json",
+      "Accept": "*/*",
+      "Authorization": "Bearer $token"
+    };
+    final response = await http.post(
       Uri.parse(endpoint),
-      headers: {'Authorization': 'Bearer $token'},
+      headers: _headers,
+      body: json.encode(body), // Convert body to JSON string
     );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      return data;
+    print(jsonDecode(response.body));
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return {
+        "success": true,
+        "message": "Deals Fetched successfully",
+        "data": jsonDecode(response.body)["data"],
+      };
     } else {
-      throw Exception("Failed to load businesses");
+      return {
+        "success": false,
+        "message": "Failed to fetch deals",
+        "data": jsonDecode(response.body),
+      };
     }
   }
 
-  Future<List<dynamic>> fetchBusinesses({required String? token,String? filter}) async {
+  Future<Map<String, dynamic>> getStore(
+      {required String? token, required String key}) async {
+    if (CountdownManager().remainingSeconds == 0) {
+      await authProvider.refreshToken();
+      countdownManager.restart();
+      token = sessionManager.authToken;
+    }
+     
+    final String endpoint = "${AppConfigs.baseUrl}/api/micro/moniback/mystoreinfo?key=$key";
+
+    print(endpoint);
+    final Map<String, String> _headers = {
+      "Content-Type": "application/json",
+      "Accept": "*/*",
+      "Authorization": "Bearer $token"
+    };
+    final response = await http.get(
+      Uri.parse(endpoint),
+      headers: _headers,
+      //body: json.encode(body), // Convert body to JSON string
+    );
+    print(jsonDecode(response.body));
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return {
+        "success": true,
+        "message": "Deals Fetched successfully",
+        "data": jsonDecode(response.body)["data"],
+      };
+    } else {
+      return {
+        "success": false,
+        "message": "Failed to fetch deals",
+        "data": jsonDecode(response.body),
+      };
+    }
+  }
+
+  Future<List<dynamic>> fetchBusinesses(
+      {required String? token, String? filter}) async {
     if (CountdownManager().remainingSeconds == 0) {
       await authProvider.refreshToken();
       countdownManager.restart();
@@ -110,7 +163,7 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> point2StoreCredit({
+  Future<Map<String, dynamic>> point2StoreCredit({
     required String? token,
     required dynamic converDetails,
   }) async {
@@ -133,12 +186,23 @@ class StoreProvider with ChangeNotifier {
       print(response.body);
       print("Got here ${response.statusCode.toString()}");
       if (response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
+       return {
+        "success": true,
+        "data": jsonDecode(response.body)["message"],
+      };
+    } else {
+      return {
+        "success": false,
+        "data": jsonDecode(response.body)["message"],
+      };
+    }
     } catch (e) {
-      return false;
+      return {
+        "success": false,
+        "data": "Failed to fetch deals",
+       // "data": jsonDecode(response.body),
+      };
     }
   }
+
 }

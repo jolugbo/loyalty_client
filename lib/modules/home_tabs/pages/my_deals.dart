@@ -22,68 +22,25 @@ class _MyDealsState extends State<MyDeals> {
   late ScrollController _AllDealScrollController;
   late ScrollController _RedeemedDealScrollController;
   late ScrollController _ExpiredDealScrollController;
+  late ScrollController _StoresScrollController;
   bool isLoading = false;
   List<dynamic> allDeals = [];
   List<dynamic> redeemedDeals = [];
   List<dynamic> expiredDeals = [];
+  List<dynamic> stores = [];
   int _currentAllDealsPage = 1;
   int _totalAllDealsPages = 1;
   int _currentRedeemedDealsPage = 1;
   int _totalRedeemedDealsPages = 1;
   int _currentExpiredDealsPage = 1;
   int _totalExpiredDealsPages = 1;
+  int _totalStoresPages = 1;
   bool showAllEmptyState = false;
   bool showMyDeals = true;
   bool showRedeemedEmptyState = false;
   bool showExpiredEmptyState = false;
+  bool showStoresEmptyState = false;
   bool loadingMore = false;
-
-  final List<dynamic> items = [
-    {
-      "logo_url": AppImages.storelogo,
-      "name": "RoadChef Cafe",
-    },
-    {
-      "logo_url": AppImages.storelogo1,
-      "name": "Angelos Cafe",
-    },
-    {
-      "logo_url": AppImages.storelogo2, // Placeholder logo URL
-      "name": "RedOnions Cafe", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo3, // Placeholder logo URL
-      "name": "Crafted By Neneh", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo4, // Placeholder logo URL
-      "name": "Skybox Restaurant & Bar", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo5, // Placeholder logo URL
-      "name": "ActiCare", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo6, // Placeholder logo URL
-      "name": "Angelos Cafe", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo7, // Placeholder logo URL
-      "name": "Angelos Cafe", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo8, // Placeholder logo URL
-      "name": "Angelos Cafe", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo9, // Placeholder logo URL
-      "name": "Angelos Cafe", // Name of the item
-    },
-    {
-      "logo_url": AppImages.storelogo10, // Placeholder logo URL
-      "name": "Angelos Cafe", // Name of the item
-    },
-  ];
 
   void _loadDeals() async {
     setState(() {
@@ -91,6 +48,7 @@ class _MyDealsState extends State<MyDeals> {
     });
     final voucherProvider =
         Provider.of<VoucherProvider>(context, listen: false);
+    final storeProvider = Provider.of<StoreProvider>(context, listen: false);
     try {
       // Perform the API calls concurrently
       final results = await Future.wait([
@@ -104,6 +62,11 @@ class _MyDealsState extends State<MyDeals> {
             token: widget.token,
             search: searchController.text,
             isExpired: true),
+        storeProvider.getStores(
+          token: widget.token,
+          page: 1,
+          key: searchController.text,
+        ),
       ]);
 
       // results for all Deals
@@ -137,7 +100,7 @@ class _MyDealsState extends State<MyDeals> {
         setState(() {
           isLoading = false;
           _totalRedeemedDealsPages = allRedeemedDeals["data"]["totalPage"];
-          allDeals = allRedeemedDeals["data"]["items"]
+          redeemedDeals = allRedeemedDeals["data"]["items"]
             ..sort((a, b) {
               DateTime dateA =
                   DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
@@ -179,6 +142,26 @@ class _MyDealsState extends State<MyDeals> {
           showExpiredEmptyState = true;
         });
       }
+        print("Stores empty?........");
+
+      // results for Stores
+      if (results[3]["success"]) {
+        print("Stores not empty........");
+        final allStores = results[3];
+        setState(() {
+          isLoading = false;
+          _totalStoresPages = allStores["data"]["totalPage"];
+          stores = allStores["data"]["items"];
+          if (allStores["data"]["totalNumber"] == 0) {
+            showStoresEmptyState = true;
+          }
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          showStoresEmptyState = true;
+        });
+      }
     } catch (error) {
       setState(() {
         isLoading = false;
@@ -187,6 +170,8 @@ class _MyDealsState extends State<MyDeals> {
   }
 
   Future<void> _onScrollAllDeals() async {
+    print(_AllDealScrollController.position.pixels);
+    print(_AllDealScrollController.position.maxScrollExtent - 200);
     final provider = Provider.of<VoucherProvider>(context, listen: false);
     if (_AllDealScrollController.position.pixels >=
         _AllDealScrollController.position.maxScrollExtent - 200) {
@@ -202,32 +187,34 @@ class _MyDealsState extends State<MyDeals> {
           // Perform the API calls concurrently
           final results = await Future.wait([
             voucherProvider.getMyDeals(
-            token: widget.token, search: searchController.text, page: _currentAllDealsPage),
+                token: widget.token,
+                search: searchController.text,
+                page: _currentAllDealsPage),
           ]);
 
-       // results for all Deals
-      if (results[0]["success"]) {
-        final allMydeals = results[0];
-        setState(() {
-          isLoading = false;
-          _totalAllDealsPages = allMydeals["data"]["totalPage"];
-          allDeals.add(allMydeals["data"]["items"]
-            ..sort((a, b) {
-              DateTime dateA =
-                  DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
-              DateTime dateB =
-                  DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
-              return dateB.compareTo(dateA); // Sort in descending order
-            }));
-          if (allMydeals["data"]["totalNumber"] == 0) {
-            showAllEmptyState = true;
+          // results for all Deals
+          if (results[0]["success"]) {
+            final allMydeals = results[0];
+            setState(() {
+              isLoading = false;
+              _totalAllDealsPages = allMydeals["data"]["totalPage"];
+              allDeals.add(allMydeals["data"]["items"]
+                ..sort((a, b) {
+                  DateTime dateA =
+                      DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
+                  DateTime dateB =
+                      DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
+                  return dateB.compareTo(dateA); // Sort in descending order
+                }));
+              if (allMydeals["data"]["totalNumber"] == 0) {
+                showAllEmptyState = true;
+              }
+            });
+          } else {
+            setState(() {
+              isLoading = false;
+            });
           }
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-      }
         } catch (error) {
           // Handle errors here
           print('Error fetching data: $error');
@@ -252,30 +239,32 @@ class _MyDealsState extends State<MyDeals> {
           // Perform the API calls concurrently
           final results = await Future.wait([
             voucherProvider.getMyDeals(
-            token: widget.token, search: searchController.text,
-            isRedeemed: true, page: _currentRedeemedDealsPage),
+                token: widget.token,
+                search: searchController.text,
+                isRedeemed: true,
+                page: _currentRedeemedDealsPage),
           ]);
 
-      // results for Redeemed Deals
-      if (results[0]["success"]) {
-        final allRedeemedDeals = results[0];
-        setState(() {
-          isLoading = false;
-          _totalRedeemedDealsPages = allRedeemedDeals["data"]["totalPage"];
-          allDeals.add(allRedeemedDeals["data"]["items"]
-            ..sort((a, b) {
-              DateTime dateA =
-                  DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
-              DateTime dateB =
-                  DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
-              return dateB.compareTo(dateA); // Sort in descending order
-            }));
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-      }
+          // results for Redeemed Deals
+          if (results[0]["success"]) {
+            final allRedeemedDeals = results[0];
+            setState(() {
+              isLoading = false;
+              _totalRedeemedDealsPages = allRedeemedDeals["data"]["totalPage"];
+              redeemedDeals.add(allRedeemedDeals["data"]["items"]
+                ..sort((a, b) {
+                  DateTime dateA =
+                      DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
+                  DateTime dateB =
+                      DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
+                  return dateB.compareTo(dateA); // Sort in descending order
+                }));
+            });
+          } else {
+            setState(() {
+              isLoading = false;
+            });
+          }
         } catch (error) {
           // Handle errors here
           print('Error fetching data: $error');
@@ -299,34 +288,36 @@ class _MyDealsState extends State<MyDeals> {
           // Perform the API calls concurrently
           final results = await Future.wait([
             voucherProvider.getMyDeals(
-            token: widget.token, search: searchController.text,
-            isExpired: true,page: _currentExpiredDealsPage),
+                token: widget.token,
+                search: searchController.text,
+                isExpired: true,
+                page: _currentExpiredDealsPage),
           ]);
 
-       // results for Expired Deals
-      if (results[0]["success"]) {
-        final allExpiredDeals = results[0];
-        setState(() {
-          isLoading = false;
-          _totalExpiredDealsPages = allExpiredDeals["data"]["totalPage"];
-          expiredDeals.add(allExpiredDeals["data"]["items"]
-            ..sort((a, b) {
-              DateTime dateA =
-                  DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
-              DateTime dateB =
-                  DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
-              return dateB.compareTo(dateA); // Sort in descending order
-            }));
-          if (allExpiredDeals["data"]["totalNumber"] == 0) {
-            showExpiredEmptyState = true;
+          // results for Expired Deals
+          if (results[0]["success"]) {
+            final allExpiredDeals = results[0];
+            setState(() {
+              isLoading = false;
+              _totalExpiredDealsPages = allExpiredDeals["data"]["totalPage"];
+              expiredDeals.add(allExpiredDeals["data"]["items"]
+                ..sort((a, b) {
+                  DateTime dateA =
+                      DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
+                  DateTime dateB =
+                      DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
+                  return dateB.compareTo(dateA); // Sort in descending order
+                }));
+              if (allExpiredDeals["data"]["totalNumber"] == 0) {
+                showExpiredEmptyState = true;
+              }
+            });
+          } else {
+            setState(() {
+              isLoading = false;
+              showExpiredEmptyState = true;
+            });
           }
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-          showExpiredEmptyState = true;
-        });
-      }
         } catch (error) {
           // Handle errors here
           print('Error fetching data: $error');
@@ -335,6 +326,60 @@ class _MyDealsState extends State<MyDeals> {
     }
   }
 
+  Future<void> _onScrollStores() async {
+    final provider = Provider.of<VoucherProvider>(context, listen: false);
+    if (_ExpiredDealScrollController.position.pixels >=
+        _ExpiredDealScrollController.position.maxScrollExtent - 200) {
+      if (_currentExpiredDealsPage < _totalExpiredDealsPages) {
+        ++_currentExpiredDealsPage;
+        setState(() {
+          loadingMore = true;
+        });
+        final voucherProvider =
+            Provider.of<VoucherProvider>(context, listen: false);
+        try {
+          // Perform the API calls concurrently
+          final results = await Future.wait([
+            voucherProvider.getMyDeals(
+                token: widget.token,
+                search: searchController.text,
+                isExpired: true,
+                page: _currentExpiredDealsPage),
+          ]);
+
+          // results for Expired Deals
+          if (results[0]["success"]) {
+            final allExpiredDeals = results[0];
+            setState(() {
+              isLoading = false;
+              _totalExpiredDealsPages = allExpiredDeals["data"]["totalPage"];
+              expiredDeals.add(allExpiredDeals["data"]["items"]
+                ..sort((a, b) {
+                  DateTime dateA =
+                      DateTime.tryParse(a["EndDate"] ?? "") ?? DateTime(1970);
+                  DateTime dateB =
+                      DateTime.tryParse(b["EndDate"] ?? "") ?? DateTime(1970);
+                  return dateB.compareTo(dateA); // Sort in descending order
+                }));
+              if (allExpiredDeals["data"]["totalNumber"] == 0) {
+                showExpiredEmptyState = true;
+              }
+            });
+          } else {
+            setState(() {
+              isLoading = false;
+              showExpiredEmptyState = true;
+            });
+          }
+        } catch (error) {
+          // Handle errors here
+          print('Error fetching data: $error');
+        }
+      }
+    }
+  }
+
+//fix the above
   @override
   void initState() {
     super.initState();
@@ -344,6 +389,8 @@ class _MyDealsState extends State<MyDeals> {
     _RedeemedDealScrollController.addListener(_onScrollRedeemedDeals);
     _ExpiredDealScrollController = ScrollController();
     _ExpiredDealScrollController.addListener(_onScrollExpiredDeal);
+    _StoresScrollController = ScrollController();
+    _StoresScrollController.addListener(_onScrollStores);
     _loadDeals();
   }
 
@@ -392,6 +439,7 @@ class _MyDealsState extends State<MyDeals> {
                         //_loadAllDeals();
                         setState(() {
                           activeTabIndex = 0;
+                          showMyDeals = true;
                         });
                       },
                     ),
@@ -402,6 +450,7 @@ class _MyDealsState extends State<MyDeals> {
                         //_loadNearByDeals();
                         setState(() {
                           activeTabIndex = 2;
+                          showMyDeals = false;
                         });
                       },
                     ),
@@ -462,48 +511,118 @@ class _MyDealsState extends State<MyDeals> {
                   ),
                 ),
               ),
-              Expanded(
+              Visibility(
+                visible: showMyDeals,
+                child: Expanded(
                   // height: size.height * 0.62,
                   child: Stack(
-                children: [
-                  ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 5),
-                      controller: (subActiveTabIndex == 0)?_AllDealScrollController:(subActiveTabIndex == 1)?_RedeemedDealScrollController:_ExpiredDealScrollController,
-                      itemCount: (subActiveTabIndex == 0)?allDeals.length:(subActiveTabIndex == 1)?redeemedDeals.length:expiredDeals.length,
-                      itemBuilder: (context, index) {
-                        return MyDealCard(deal: (subActiveTabIndex == 0)?allDeals[index]:(subActiveTabIndex == 1)?redeemedDeals[index]:expiredDeals[index], token: widget.token);
-                      }),
-                  
-                  if (loadingMore)
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Center(
-                          child: CircularProgressIndicator(
-                        color: AppColor.primaryColor,
-                      )),
-                    ),
-                  if (isLoading)
-                    Container(
-                      //color: AppColor.background,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColor.primaryColor,
+                    children: [
+                      ListView.builder(
+                          padding: EdgeInsets.symmetric(horizontal: 5),
+                          controller: (subActiveTabIndex == 0)
+                              ? _AllDealScrollController
+                              : (subActiveTabIndex == 1)
+                                  ? _RedeemedDealScrollController
+                                  : _ExpiredDealScrollController,
+                          itemCount: (subActiveTabIndex == 0)
+                              ? allDeals.length
+                              : (subActiveTabIndex == 1)
+                                  ? redeemedDeals.length
+                                  : expiredDeals.length,
+                          itemBuilder: (context, index) {
+                            return MyDealCard(
+                                deal: (subActiveTabIndex == 0)
+                                    ? allDeals[index]
+                                    : (subActiveTabIndex == 1)
+                                        ? redeemedDeals[index]
+                                        : expiredDeals[index],
+                                token: widget.token,
+                                status: (subActiveTabIndex == 0)
+                                    ? "all"
+                                    : (subActiveTabIndex == 1)
+                                        ? "redeemed"
+                                        : "expired");
+                          }),
+                      if (loadingMore)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                            color: AppColor.primaryColor,
+                          )),
                         ),
-                      ),
-                    ),
-                  if ((subActiveTabIndex == 0)?showAllEmptyState:(subActiveTabIndex == 1)?showRedeemedEmptyState:showExpiredEmptyState)
-                    Container(
-                      child: Center(
-                        child: Image.asset(
-                          AppImages.empty_state,
-                          width: size.width,
-                          height: size.height * 0.2,
-                          fit: BoxFit.fitHeight,
+                      if (isLoading)
+                        Container(
+                          //color: AppColor.background,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                ],
-              )),
+                      if ((subActiveTabIndex == 0)
+                          ? showAllEmptyState
+                          : (subActiveTabIndex == 1)
+                              ? showRedeemedEmptyState
+                              : showExpiredEmptyState)
+                        Container(
+                          child: Center(
+                            child: Image.asset(
+                              AppImages.empty_state,
+                              width: size.width,
+                              height: size.height * 0.2,
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Visibility(
+                  visible: !showMyDeals,
+                  child: Expanded(
+                      // height: size.height * 0.62,
+                      child: Stack(
+                    children: [
+                      ListView.builder(
+                          padding: EdgeInsets.symmetric(horizontal: 5),
+                          controller: _StoresScrollController,
+                          itemCount: stores.length,
+                          itemBuilder: (context, index) {
+                            return MyStoreCard(
+                                store: stores[index], token: widget.token);
+                          }),
+                      if (loadingMore)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                            color: AppColor.primaryColor,
+                          )),
+                        ),
+                      if (isLoading)
+                        Container(
+                          //color: AppColor.background,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
+                        ),
+                      if (showStoresEmptyState)
+                        Container(
+                          child: Center(
+                            child: Image.asset(
+                              AppImages.empty_state,
+                              width: size.width,
+                              height: size.height * 0.2,
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ))),
             ],
           ),
         ),

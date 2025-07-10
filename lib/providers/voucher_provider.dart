@@ -71,7 +71,6 @@ class VoucherProvider with ChangeNotifier {
       print(response.headers);
       // Handle response
       if (response.statusCode == 201 || response.statusCode == 200) {
-        print(jsonDecode(response.body));
         return {
           "success": true,
           "message": "Deals Fetched successfully",
@@ -94,14 +93,43 @@ class VoucherProvider with ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> getMyDeals(
-      {required String? token,
-      String search = "",bool isExpired = false,isRedeemed = false,
-      int page = 1}) async {
-    final String endpoint = "${AppConfigs.baseUrl}/api/micro/moniback/mydeals";
+  Future<Map<String, dynamic>> getBulkDeals({
+    required String? token,
+    required String key,
+  }) async {
+    if (CountdownManager().remainingSeconds == 0) {
+      await authProvider.refreshToken();
+      countdownManager.restart();
+      token = sessionManager.authToken;
+    }
+    final String endpoint =
+        "${AppConfigs.baseUrl}/api/micro/moniback/deals/bulk?promotionKey=$key";
+    print(endpoint);
+    final response = await http.get(
+      Uri.parse(endpoint),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return {
+        "success": true,
+        "data": jsonDecode(response.body)["data"],
+      };
+    } else {
+      return {
+        "success": false,
+        "data": jsonDecode(response.body)["message"],
+      };
+    }
+  }
 
-    print(
-        "CountdownManager().remainingSeconds ${CountdownManager().remainingSeconds}");
+  Future<Map<String, dynamic>> getConversionHistory(
+      {required String? token,
+      String search = "",
+      bool isMyFavourites = false,
+      int page = 1}) async {
+    final String endpoint =
+        "${AppConfigs.baseUrl}/api/micro/moniback/conversion-history";
+
     if (CountdownManager().remainingSeconds == 0) {
       await authProvider.refreshToken();
       countdownManager.restart();
@@ -112,7 +140,64 @@ class VoucherProvider with ChangeNotifier {
       "Accept": "*/*",
       "Authorization": "Bearer $token"
     };
-   
+
+    final Map<String, dynamic> body = {
+      "keyword": "",
+      "pageNumber": 1,
+      "pageSize": 100
+    };
+    print(body);
+
+    try {
+      // Send the POST request
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: _headers,
+        body: json.encode(body), // Convert body to JSON string
+      );
+      // Handle response
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {
+          "success": true,
+          "message": "History Fetched successfully",
+          "data": jsonDecode(response.body)["data"],
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Failed to fetch History",
+          "data": jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      print("Failed here......................... $e");
+      return {
+        "success": false,
+        "message": "An error occurred: $e",
+        "data": null,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getMyDeals(
+      {required String? token,
+      String search = "",
+      bool isExpired = false,
+      isRedeemed = false,
+      int page = 1}) async {
+    final String endpoint = "${AppConfigs.baseUrl}/api/micro/moniback/mydeals";
+
+    if (CountdownManager().remainingSeconds == 0) {
+      await authProvider.refreshToken();
+      countdownManager.restart();
+      token = sessionManager.authToken;
+    }
+    final Map<String, String> _headers = {
+      "Content-Type": "application/json",
+      "Accept": "*/*",
+      "Authorization": "Bearer $token"
+    };
+
     // final Map<String, String> _headers = {
     //   'content-type': 'application/json',
     //   "Authorization": "Bearer $token",
@@ -124,9 +209,8 @@ class VoucherProvider with ChangeNotifier {
       'isExpired': isExpired,
       'keyword': search,
       'pageNumber': page,
-      'pageSize': 10
+      'pageSize': 13
     };
-    print(body);
 
     try {
       // Send the POST request
@@ -135,7 +219,6 @@ class VoucherProvider with ChangeNotifier {
         headers: _headers,
         body: json.encode(body), // Convert body to JSON string
       );
-      print(response.headers);
       // Handle response
       if (response.statusCode == 201 || response.statusCode == 200) {
         print(jsonDecode(response.body));

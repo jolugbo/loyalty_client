@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:moniback/modules/store/store.dart';
 import 'package:moniback/providers/auth_providers.dart';
 import 'package:moniback/providers/voucher_provider.dart';
 import 'package:moniback/utils/constants/app_colors.dart';
@@ -12,7 +13,12 @@ import 'package:share_plus/share_plus.dart';
 class MyDealCard extends StatefulWidget {
   final deal;
   final token;
-  const MyDealCard({required this.deal, required this.token, super.key});
+  final status;
+  const MyDealCard(
+      {required this.deal,
+      required this.token,
+      super.key,
+      required this.status});
   @override
   State<MyDealCard> createState() => _MyDealCardState();
 }
@@ -76,7 +82,9 @@ class _MyDealCardState extends State<MyDealCard> {
     _startCountdown();
     //_loadImage();
     setState(() {
-      (widget.deal["AvailableVouchers"] < 1) ? isClaimed = true : isClaimed = false;
+      (widget.deal["AvailableVouchers"] < 1)
+          ? isClaimed = true
+          : isClaimed = false;
       isBookmarked = ValueNotifier(widget.deal["IsMarkedLiked"]);
       isBookmarking = ValueNotifier(false);
       isLiked = ValueNotifier(widget.deal["IsLiked"]);
@@ -106,7 +114,8 @@ class _MyDealCardState extends State<MyDealCard> {
       setState(() {
         isLoading = true;
         widget.deal["IsMarkedLiked"] = !widget.deal["IsMarkedLiked"];
-        widget.deal["MarkedLikedCount"] += (widget.deal["IsMarkedLiked"])? 1:-1;
+        widget.deal["MarkedLikedCount"] +=
+            (widget.deal["IsMarkedLiked"]) ? 1 : -1;
       });
       final results = await voucherProvider.likeVoucher(
           token: widget.token,
@@ -122,7 +131,8 @@ class _MyDealCardState extends State<MyDealCard> {
         isLoading = false;
         if (!results["success"]) {
           widget.deal["IsMarkedLiked"] = !widget.deal["IsMarkedLiked"];
-          widget.deal["MarkedLikedCount"] -=  (widget.deal["IsMarkedLiked"])? -1:1;
+          widget.deal["MarkedLikedCount"] -=
+              (widget.deal["IsMarkedLiked"]) ? -1 : 1;
         }
       });
     } catch (error) {
@@ -136,7 +146,7 @@ class _MyDealCardState extends State<MyDealCard> {
       setState(() {
         isLoading = true;
         widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
-        widget.deal["BookmarkCount"] += (widget.deal["IsBookmarked"])? 1:-1;
+        widget.deal["BookmarkCount"] += (widget.deal["IsBookmarked"]) ? 1 : -1;
       });
       print(widget.deal["BookmarkCount"]);
       final results = await voucherProvider.bookMarkVoucher(
@@ -149,8 +159,8 @@ class _MyDealCardState extends State<MyDealCard> {
         isLoading = false;
       });
       if (!results["success"]) {
-          widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
-          widget.deal["BookmarkCount"] -=  (widget.deal["BookmarkCount"])? -1:1;
+        widget.deal["IsBookmarked"] = !widget.deal["IsBookmarked"];
+        widget.deal["BookmarkCount"] -= (widget.deal["BookmarkCount"]) ? -1 : 1;
       }
     } catch (error) {
       // Handle errors here
@@ -172,8 +182,7 @@ class _MyDealCardState extends State<MyDealCard> {
         isLoading = false;
         print(results["success"]);
         if (results["success"]) {
-          CustomSnackbar.showSuccess(context,results["message"]);
-
+          CustomSnackbar.showSuccess(context, results["message"]);
         } else {
           CustomSnackbar.showError(context, results['data']);
         }
@@ -202,111 +211,258 @@ class _MyDealCardState extends State<MyDealCard> {
       likeCounts = "${count} People Love this";
     }
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 20),
+    return Card(
+      margin: const EdgeInsets.all(12),
       color: AppColor.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(0),
-        child: Column(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 8),
-            //Card Top
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 10),
-                    FutureBuilder<ImageProvider>(
-                      future: _logoFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircleAvatar(
-                            backgroundColor: Colors.yellow[400],
-                            child: Icon(Icons.store),
-                            radius: 30,
-                          );
-                        } else if (snapshot.hasError) {
-                          return CircleAvatar(
-                            backgroundColor: Colors.red[300],
-                            child: Icon(Icons.error),
-                            radius: 30,
-                          );
-                        } else {
-                          return CircleAvatar(
-                            backgroundImage: snapshot.data!,
-                            radius: 30,
-                          );
-                        }
-                      },
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      widget.deal["BusinessName"],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: AppColor.dark),
-                    ),
-                  ],
-                ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    width: size.width * 0.22,
-                    height: size.height * 0.04,
-                    color: countDown == "Expired"
-                        ? AppColor.lightRed
-                        : AppColor.dateBGGreen,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(width: 6),
-                        Visibility(
-                            visible: countDown != "Expired",
-                            child: const Icon(Icons.access_time,
-                                color: AppColor.dateGreen)),
-                        Text(
-                          "${(countDown == 0) ? "" : countDown}",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: countDown == "Expired"
-                                  ? AppColor.Red
-                                  : AppColor.dateGreen),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            // Image
+            // Left image
             ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: Stack(
-                children: [
-                  FutureBuilder<ImageProvider>(
-                    future: _featuredImageFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        //
-                        return  Container(
+              borderRadius: BorderRadius.circular(12),
+              child: FutureBuilder<ImageProvider>(
+                future: _featuredImageFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    //
+                    return Container(
                       color: AppColor.background,
-                      height: size.height * 0.4,
+                      width: 80,
+                      height: 80,
                       child: const Center(
                         child: CircularProgressIndicator(
                           color: AppColor.primaryColor,
                         ),
                       ),
                     );
+                  } else if (snapshot.hasError) {
+                    return CircleAvatar(
+                      backgroundColor: Colors.red[300],
+                      child: Icon(Icons.error),
+                      radius: double.infinity,
+                    );
+                  } else {
+                    return Image(
+                      image: snapshot.data!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    );
+                  }
+                },
+              ),
+            ),
+           
+            const SizedBox(width: 12),
+            // Right content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title and countdown
+                  Row(
+                    children: [
+                      // Logo and name
+                      CircleAvatar(
+                        radius: 10,
+                        child: FutureBuilder<ImageProvider>(
+                          future: _logoFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircleAvatar(
+                                backgroundColor: Colors.yellow[400],
+                                child: Icon(Icons.store),
+                                radius: 30,
+                              );
+                            } else if (snapshot.hasError) {
+                              return CircleAvatar(
+                                backgroundColor: Colors.red[300],
+                                child: Icon(Icons.error),
+                                radius: 30,
+                              );
+                            } else {
+                              return CircleAvatar(
+                                backgroundImage: snapshot.data!,
+                                radius: 30,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        (widget.deal["BusinessName"] != null &&
+                                widget.deal["BusinessName"].length > 15)
+                            ? widget.deal["BusinessName"].substring(0, 15) +
+                                '...' // Add ellipsis for truncated text
+                            : widget.deal["BusinessName"],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: AppColor.dark),
+                      ),
+                      const Spacer(),
+                      // Countdown badge
+                      Visibility(
+                          visible: widget.status == "all",
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (countDown == "Expired")
+                                  ? AppColor.objectColor
+                                  : Color(0xFFE6F8EA),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 14,
+                                  color: (countDown == "Expired")
+                                      ? AppColor.Red
+                                      : Colors.green,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  "${(countDown == 0) ? "" : countDown}",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: (countDown == "Expired")
+                                        ? AppColor.Red
+                                        : Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    (widget.deal["Description"] != null &&
+                            widget.deal["Description"].length > 100)
+                        ? widget.deal["Description"].substring(0, 100) +
+                            '... more' // Add ellipsis for truncated text
+                        : widget.deal["Description"],
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Visibility(
+                      visible:
+                          widget.status == "all" || widget.status == "expired",
+                      child: Text(
+                        widget.deal["CreatedDate"].substring(0, 10),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      )),
+                  Visibility(
+                    visible: widget.status == "redeemed",
+                    child: Container(
+                      child: Image.asset(
+                        AppImages.redeemed,
+                        width: size.width * 0.2,
+                        //height: size.height * 0.2,
+                        fit: BoxFit.fitHeight,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MyStoreCard extends StatefulWidget {
+  final store;
+  final token;
+  const MyStoreCard({required this.store, required this.token, super.key});
+  @override
+  State<MyStoreCard> createState() => _MyStoreCardState();
+}
+
+class _MyStoreCardState extends State<MyStoreCard> {
+  bool isClaimed = false;
+  bool isLoading = false;
+  ImageProvider logo = AssetImage(AppImages.store1);
+  ImageProvider dealImage = AssetImage(AppImages.deal);
+  late Future<ImageProvider> _logoFuture;
+  late Future<ImageProvider> _featuredImageFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    //_loadImage();
+    setState(() {
+      final voucherProvider =
+          Provider.of<VoucherProvider>(context, listen: false);
+      _logoFuture = voucherProvider.getImage(
+        token: widget.token,
+        imageUrl: widget.store["LogoUri"] ?? "",
+      );
+      // _featuredImageFuture = voucherProvider.getImage(
+      //   token: widget.token,
+      //   imageUrl: widget.deal["FeaturedImageUri"],
+      // );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return GestureDetector(
+        onTap: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => Store(token: widget.token,contactKey: widget.store["BusinessProfileId"],)));
+        },
+        child: Card(
+          margin: const EdgeInsets.all(12),
+          color: AppColor.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: FutureBuilder<ImageProvider>(
+                    future: _logoFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        //
+                        return Container(
+                          color: AppColor.background,
+                          width: 80,
+                          height: 80,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
+                        );
                       } else if (snapshot.hasError) {
                         return CircleAvatar(
                           backgroundColor: Colors.red[300],
@@ -316,257 +472,120 @@ class _MyDealCardState extends State<MyDealCard> {
                       } else {
                         return Image(
                           image: snapshot.data!,
-                          height: size.height * 0.4,
-                          width: double.infinity,
-                          fit: BoxFit.fill,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
                         );
                       }
                     },
                   ),
-                  // if (isLoading)
-                  //   Container(
-                  //     color: AppColor.background,
-                  //     height: size.height * 0.4,
-                  //     child: const Center(
-                  //       child: CircularProgressIndicator(
-                  //         color: AppColor.primaryColor,
-                  //       ),
-                  //     ),
-                  //   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            //Card footer
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 5, 10, 10),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: size.width,
-                      child: Row(
-                        children: [
-                          //Like Button
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              alignment: Alignment.centerLeft,
-                              width: size.width * 0.22,
-                              color: (widget.deal["IsMarkedLiked"])
-                                  ? AppColor.Red
-                                  : AppColor.background,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(width: 6),
-                                  IconButton(
-                                    onPressed: () {
-                                      _likeAction(voucherProvider);
-                                    },
-                                    icon: Icon(Icons.favorite_outline,
-                                        color: (widget.deal["IsMarkedLiked"])
-                                            ? AppColor.white
-                                            : AppColor.lightdark),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    "${widget.deal["MarkedLikedCount"]}",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 20,
-                                        color: (widget.deal["IsMarkedLiked"])
-                                            ? AppColor.white
-                                            : AppColor.grey2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              alignment: Alignment.centerLeft,
-                              width: size.width * 0.18,
-                              child: ValueListenableBuilder<bool>(
-                                valueListenable: isBookmarking,
-                                builder: (context, loading, _) {
-                                  return ValueListenableBuilder<bool>(
-                                    valueListenable: isBookmarked,
-                                    builder: (context, bookmarked, _) {
-                                      return Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            onPressed: () {
-                                              _bookmarkAction(voucherProvider);
-                                            },
-                                            icon: (widget.deal["IsBookmarked"])
-                                                ? Icon(Icons.bookmark_rounded,
-                                                    color: AppColor.lightdark)
-                                                : Icon(
-                                                    Icons
-                                                        .bookmark_border_outlined,
-                                                    color: AppColor.lightdark),
-                                          ),
-                                          Text(
-                                            "${widget.deal["BookmarkCount"]}",
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 20,
-                                                color: AppColor.grey2),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          ValueListenableBuilder<bool>(
-                            valueListenable: isLiking,
-                            builder: (context, loading, _) {
-                              return ValueListenableBuilder<bool>(
-                                valueListenable: isLiked,
-                                builder: (context, liked, _) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      String content =
-                                          'Check out this amazing app!';
-                                      String subject = 'Moniback';
-                                      Share.share(content, subject: subject);
-                                    },
-                                    child: Image.asset(
-                                      AppImages.share,
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          // Claim Button
-                          Container(
-                            padding:
-                                EdgeInsets.fromLTRB(size.width * 0.08, 0, 0, 0),
-                            width: size.width * 0.4,
-                            child: ElevatedButton(
-                              onPressed: () => isClaimed||(countDown == "Expired")
-                                  ? {
-                                      CustomSnackbar.showError(context,
-                                          "You you cannot claim this voucher")
-                                    }
-                                    :_claimAction(voucherProvider),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isClaimed|(countDown == "Expired")
-                                    ? AppColor.cardBtn
-                                    : AppColor.primaryColor,
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                (widget.deal["AvailableVouchers"] < 1) ? "Claimed" :(countDown == "Expired")? "Expired": "Claim Now",
-                                style: TextStyle(
-                                    color: isClaimed
-                                        ? AppColor.grey2
-                                        :(countDown == "Expired")? AppColor.Red: Colors.black,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                     ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    width: size.width * 0.3,
-                    height: size.height * 0.04,
-                    color: (widget.deal["AvailableVouchers"] <= 10)
-                        ? AppColor.lightRed
-                        : AppColor.dateBGGreen,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(width: 6),
-                        Visibility(
-                            visible: (widget.deal["AvailableVouchers"] >= 10),
-                            child:  Icon(Icons.info_outline,
-                                 color: widget.deal["AvailableVouchers"] <= 10
-                                  ? AppColor.Red
-                                  : AppColor.dateGreen),),
-                        SizedBox(width: 6),
-                        Text(
-                          "${widget.deal["AvailableVouchersHtml"]}",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: widget.deal["AvailableVouchers"] <= 10
-                                  ? AppColor.Red
-                                  : AppColor.dateGreen),
-                        )
-                      ],
-                    ),
-                  ),
                 ),
-                    
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: "${widget.deal["Name"]} ",
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 14),
-                          ),
-                          TextSpan(
-                            text: widget.deal["Description"] != null &&
-                                    widget.deal["Description"].length > 100
-                                ? widget.deal["Description"].substring(0, 100) +
-                                    '... more' // Add ellipsis for truncated text
-                                : widget.deal["Description"],
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w300,
-                                fontSize: 11),
-                          ),
-                          // TextSpan(
-                          //   text: widget.deal["Description"] != null &&
-                          //           widget.deal["Description"].length >
-                          //               100
-                          //       ? 'Read More' // Add ellipsis for truncated text
-                          //       : "",
-                          //   style: TextStyle(
-                          //       color: Colors.black,
-                          //       fontWeight: FontWeight.w500,
-                          //       fontSize: 11),
-                          // ),
-                        ],
+                const SizedBox(width: 12),
+                // Right content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title and countdown
+                      Text(
+                        (widget.store["Name"] != null &&
+                                widget.store["Name"].length > 15)
+                            ? widget.store["Name"].substring(0, 15) +
+                                '...' // Add ellipsis for truncated text
+                            : widget.store["Name"],
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: AppColor.dark),
                       ),
-                    ),
-
-                    // Description
-                  ]),
+                      const SizedBox(height: 6),
+                      Text(
+                        (widget.store["BusinessDescription"] != null &&
+                                widget.store["BusinessDescription"].length >
+                                    100)
+                            ? "${widget.store["BusinessDescription"].substring(0, 100) + '... more'}" // Add ellipsis for truncated text
+                            : "${widget.store["BusinessDescription"]}",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                  ),
+                )
+              ],
             ),
-          ],
-        ),
+          ),
+        ));
+  }
+}
+
+class AccountCard extends StatelessWidget {
+  final AssetImage icon;
+  final Color iconBgColor;
+  final String label;
+  final String value;
+  final bool showArrow;
+
+  const AccountCard({
+    required this.icon,
+    required this.iconBgColor,
+    required this.label,
+    required this.value,
+    this.showArrow = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon Circle
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+                                    child: Image(
+                                      image: icon,
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+          ),
+          const SizedBox(width: 10),
+          // Texts
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(color: AppColor.lightdark,
+                        fontSize: 10, fontWeight: FontWeight.w400)),
+                const SizedBox(height: 15),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: AppColor.black)),
+              ],
+            ),
+          ),
+          if (showArrow)
+            const Icon(Icons.chevron_right, color: Colors.black54, size: 20),
+        ],
       ),
     );
   }

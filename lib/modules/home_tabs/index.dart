@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moniback/modules/home_tabs/pages/accounts.dart';
 import 'package:moniback/modules/home_tabs/pages/pin.dart';
 import 'package:moniback/modules/home_tabs/pages/my_deals.dart';
 import 'package:moniback/providers/auth_providers.dart';
@@ -61,7 +62,7 @@ class _indexPageState extends State<indexPage> {
       Pin(
         token: widget.token,
       ),
-      Center(child: Text('User Page')),
+      Account( token: widget.token),
     ];
   }
 

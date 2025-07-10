@@ -308,6 +308,7 @@ class AuthProvider with ChangeNotifier {
     final String endpoint =
         "${AppConfigs.baseUrl}/api/micro/moniback/securepin";
     _headers["Authorization"] = "Bearer $token";
+    print(CountdownManager().remainingSeconds);
 if (CountdownManager().remainingSeconds == 0) {
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginPage()),
